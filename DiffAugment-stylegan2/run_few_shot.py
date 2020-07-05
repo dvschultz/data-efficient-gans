@@ -22,7 +22,7 @@ from training import misc
 # ----------------------------------------------------------------------------
 
 
-def run(dataset, resolution, result_dir, DiffAugment, num_gpus, batch_size, total_kimg, ema_kimg, num_samples, gamma, fmap_base, fmap_max, latent_size, mirror_augment, impl, metrics, resume, resume_kimg, num_repeats, eval):
+def run(dataset, resolution, result_dir, DiffAugment, num_gpus, batch_size, gpu_batch, total_kimg, ema_kimg, num_samples, gamma, fmap_base, fmap_max, latent_size, mirror_augment, impl, metrics, resume, resume_kimg, num_repeats, eval):
     train = EasyDict(run_func_name='training.training_loop.training_loop')  # Options for training loop.
     G = EasyDict(func_name='training.networks_stylegan2.G_main')       # Options for generator network.
     D = EasyDict(func_name='training.networks_stylegan2.D_stylegan2')  # Options for discriminator network.
@@ -62,7 +62,10 @@ def run(dataset, resolution, result_dir, DiffAugment, num_gpus, batch_size, tota
     sc.num_gpus = num_gpus
     desc += '-%dgpu' % num_gpus
     sched.minibatch_size_base = batch_size
-    sched.minibatch_gpu_base = batch_size // num_gpus
+    if gpu_batch is not None:
+        sched.minibatch_gpu_base = gpu_batch
+    else:
+        sched.minibatch_gpu_base = batch_size // num_gpus
 
     G.impl = D.impl = impl
     if fmap_base is not None:
@@ -141,6 +144,7 @@ def main():
     parser.add_argument('--DiffAugment', help='Comma-separated list of DiffAugment policy', default='color,translation,cutout')
     parser.add_argument('--num-gpus', help='Number of GPUs (default: %(default)s)', default=1, type=int, metavar='N')
     parser.add_argument('--batch-size', help='Batch size', default=None, type=int, metavar='N')
+    parser.add_argument('--gpu-batch', help='GPU Batch size', default=None, type=int, metavar='N')
     parser.add_argument('--total-kimg', help='Training length in thousands of images (default: %(default)s)', metavar='KIMG', default=300, type=int)
     parser.add_argument('--ema-kimg', help='Half-life of exponential moving average in thousands of images', metavar='KIMG', default=None, type=int)
     parser.add_argument('--num-samples', help='Number of samples', default=None, type=int)
